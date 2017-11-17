@@ -25,13 +25,13 @@ import rx.schedulers.Schedulers;
  * Created by Administrator on 2017/11/16.
  */
 
-public class RxJavaTest implements MainContract.MainModule {
+public class MainModuleRxJava1 implements MainContract.MainModule {
 
     MainContract.MainView mainView;
     Observer<String> myObserver;
     Subscriber<String> mySubscriber;
 
-    public RxJavaTest(MainContract.MainView mainView) {
+    public MainModuleRxJava1(MainContract.MainView mainView) {
         this.mainView = mainView;
         initObserver();
     }
@@ -198,7 +198,7 @@ public class RxJavaTest implements MainContract.MainModule {
     }
 
     @Override
-    public void test12_filter_take_doOnNext() {
+    public void test12_Filter_Take_DoOnNext() {
         //使用filter对数据进行过滤
         query().flatMap(list -> Observable.from(list))
                 .filter(s -> s != "url03")
@@ -214,7 +214,7 @@ public class RxJavaTest implements MainContract.MainModule {
     }
 
     @Override
-    public void test13_scheduler() {
+    public void test13_Scheduler() {
         Observable.just(1, 2, 3, 4)
                 .subscribeOn(Schedulers.io()) // 指定 subscribe() 发生在 IO 线程
                 .observeOn(AndroidSchedulers.mainThread()) // 指定 Subscriber 的回调发生在主线程

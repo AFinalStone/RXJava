@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/APPByRxJava2.0/APPByRxJava2.0.iml" filepath="$PROJECT_DIR$/APPByRxJava2.0/APPByRxJava2.0.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppByRxJava1.0/AppByRxJava1.0.iml" filepath="$PROJECT_DIR$/AppByRxJava1.0/AppByRxJava1.0.iml" />
       <module fileurl="file://$PROJECT_DIR$/RXJava.iml" filepath="$PROJECT_DIR$/RXJava.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
 </project>

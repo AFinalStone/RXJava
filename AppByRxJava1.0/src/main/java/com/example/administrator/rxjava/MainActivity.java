@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mainModule = new RxJavaTest(this);
+        mainModule = new MainModuleRxJava1(this);
     }
 
     public void onClick(View view) {
@@ -78,11 +78,11 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
                 break;
 
             case R.id.btn_test12Filter_take_doOnNext:
-                mainModule.test12_filter_take_doOnNext();
+                mainModule.test12_Filter_Take_DoOnNext();
                 break;
 
             case R.id.btn_test13Scheduler:
-                mainModule.test13_scheduler();
+                mainModule.test13_Scheduler();
                 break;
         }
 
