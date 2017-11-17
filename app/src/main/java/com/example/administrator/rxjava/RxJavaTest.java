@@ -2,6 +2,7 @@ package com.example.administrator.rxjava;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.SystemClock;
 import android.support.annotation.RawRes;
 import android.util.Log;
 import android.widget.ImageView;
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -200,7 +202,7 @@ public class RxJavaTest implements MainContract.MainModule {
         //使用filter对数据进行过滤
         query().flatMap(list -> Observable.from(list))
                 .filter(s -> s != "url03")
-                .subscribe(url -> Log.d("just", "Filter: 被执行++++" +url));
+                .subscribe(url -> Log.d("just", "Filter: 被执行++++" + url));
         //使用take限制输出数量
         query().flatMap(list -> Observable.from(list))
                 .take(5)
@@ -209,6 +211,57 @@ public class RxJavaTest implements MainContract.MainModule {
         query().flatMap(list -> Observable.from(list))
                 .doOnNext(url -> Log.d("just", "doOnNext: 提前被执行++++" + url))
                 .subscribe(url -> Log.d("just", "doOnNext_subscribe: 最终结果被执行++++" + url));
+    }
+
+    @Override
+    public void test13_scheduler() {
+        Observable.just(1, 2, 3, 4)
+                .subscribeOn(Schedulers.io()) // 指定 subscribe() 发生在 IO 线程
+                .observeOn(AndroidSchedulers.mainThread()) // 指定 Subscriber 的回调发生在主线程
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer number) {
+                        Log.d("test13_scheduler01", "test13_scheduler01+++++++number:" + number + "当前线程名称：" + Thread.currentThread().getName());
+                    }
+                });
+
+        Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+
+                Log.d("test13_scheduler02", "被观察者所在的前线程名称：:" + Thread.currentThread().getName());
+
+                subscriber.onNext("info1");
+
+                SystemClock.sleep(2000);
+                subscriber.onNext("info2-sleep 2s");
+
+                SystemClock.sleep(3000);
+                subscriber.onNext("info2-sleep 3s");
+
+                SystemClock.sleep(5000);
+                subscriber.onCompleted();
+            }
+        })
+                .subscribeOn(Schedulers.io()) //指定 subscribe() 发生在 IO 线程
+                .observeOn(AndroidSchedulers.mainThread()) //指定 Subscriber 的回调发生在主线程
+                .subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d("test13_scheduler02", "onCompleted()+当前线程名称：" + Thread.currentThread().getName());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.v("test13_scheduler02", "onError() e=" + e);
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d("test13_scheduler02", "onNext()+当前线程名称：:" + Thread.currentThread().getName());
+                        mainView.showMsg(s);
+                    }
+                });
     }
 
     private Observable<List<String>> query() {
@@ -223,7 +276,6 @@ public class RxJavaTest implements MainContract.MainModule {
         list.add("url08");
         return Observable.just(list);
     }
-
 
 
 }

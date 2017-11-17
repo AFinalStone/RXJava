@@ -117,5 +117,12 @@
             android:layout_height="wrap_content"
             android:onClick="onClick"
             android:text="RXJava—Filter_take_doOnNext操作符" />
+
+        <Button
+            android:id="@+id/btn_test13Scheduler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onClick"
+            android:text="RXJava—线程控制(Scheduler)" />
     </LinearLayout>
 </ScrollView>

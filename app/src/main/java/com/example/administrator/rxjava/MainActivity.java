@@ -7,6 +7,7 @@ import android.support.annotation.RawRes;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.InputStream;
 
@@ -79,6 +80,10 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
             case R.id.btn_test12Filter_take_doOnNext:
                 mainModule.test12_filter_take_doOnNext();
                 break;
+
+            case R.id.btn_test13Scheduler:
+                mainModule.test13_scheduler();
+                break;
         }
 
     }
@@ -94,5 +99,8 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
         imageView.setImageBitmap(bitmap);
     }
 
+    public void showMsg(String msg){
+        Toast.makeText(this,msg,Toast.LENGTH_SHORT).show();
+    }
 
 }

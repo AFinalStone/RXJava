@@ -35,6 +35,8 @@ public class MainContract {
 
         public void test12_filter_take_doOnNext();
 
+        public void test13_scheduler();
+
     }
 
     public interface MainView {
@@ -42,5 +44,7 @@ public class MainContract {
         public Bitmap getBitmapFromPath(@RawRes int filePath);
 
         public void showBitmap(Bitmap bitmap);
+
+        public void showMsg(String msg);
     }
 }

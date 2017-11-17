@@ -458,3 +458,354 @@ RxJava包含了大量的操作符。操作符的数量是有点吓人，但是�
 因为操作符可以让你对数据流做任何操作。
 
 将一系列的操作符链接起来就可以完成复杂的逻辑。代码被分解成一系列可以组合的片段。这就是**响应式函数编程**的魅力。用的越多，就会越多的改变你的编程思维。
+
+
+#### 线程控制(Scheduler)
+
+假设你编写的Android app需要从网络请求数据。网络请求需要花费较长的时间，因此你打算在另外一个线程中加载数据。那么问题来了！
+
+编写多线程的Android应用程序是很难的，因为你必须确保代码在正确的线程中运行，否则的话可能会导致app崩溃。最常见的就是在非主线程更新UI。
+
+在不指定线程的情况下， RxJava 遵循的是线程不变的原则，即：在哪个线程调用 subscribe()，就在哪个线程生产事件；在哪个线程生产事件，就在哪个线程消费事件。如果需要切换线程，就需要用到 Scheduler （调度器）。
+
+使用RxJava，你可以使用subscribeOn()指定观察者代码运行的线程，使用observerOn()指定订阅者运行的线程
+
+##### Scheduler 的 API
+
+在RxJava 中，Scheduler ——调度器，相当于线程控制器，RxJava 通过它来指定每一段代码应该运行在什么样的线程。RxJava 已经内置了几个 Scheduler ，它们已经适合大多数的使用场景：
+
+1.Schedulers.immediate(): 直接在当前线程运行，相当于不指定线程。这是默认的 Scheduler。
+
+2.Schedulers.newThread(): 总是启用新线程，并在新线程执行操作。
+
+3.Schedulers.io(): I/O 操作（读写文件、读写数据库、网络信息交互等）所使用的 Scheduler。行为模式和 newThread() 差不多，区别在于 io() 的内部实现是是用一个无数量上限的线程池，可以重用空闲的线程，因此多数情况下 io() 比 newThread() 更有效率。不要把计算工作放在 io() 中，可以避免创建不必要的线程。
+
+4.Schedulers.computation(): 计算所使用的 Scheduler。这个计算指的是 CPU 密集型计算，即不会被 I/O 等操作限制性能的操作，例如图形的计算。这个 Scheduler 使用的固定的线程池，大小为 CPU 核数。不要把 I/O 操作放在 computation() 中，否则 I/O 操作的等待时间会浪费 CPU。
+
+5.另外， Android 还有一个专用的 AndroidSchedulers.mainThread()，它指定的操作将在 Android 主线程运行。
+
+有了以上这几个 Scheduler ，就可以使用 subscribeOn() 和 observeOn() 两个方法来对线程进行控制了。
+
+- subscribeOn(): 指定 subscribe() 所发生的线程，即 Observable.OnSubscribe 被激活时所处的线程。或者叫做事件产生的线程。
+
+- observeOn(): 指定 Subscriber 所运行在的线程。或者叫做事件消费的线程。
+
+注意：observeOn() 指定的是 Subscriber 的线程，而这个 Subscriber 并不一定是 subscribe() 参数中的 Subscriber（这块参考RxJava变换部分），而是 observeOn() 执行时的当前 Observable 所对应的 Subscriber ，即它的直接下级 Subscriber 。
+
+换句话说，observeOn() 指定的是它之后的操作所在的线程。因此如果有多次切换线程的需求，只要在每个想要切换线程的位置调用一次 observeOn() 即可。
+
+代码示例：
+
+```java
+Observable.just(1, 2, 3, 4)
+    .subscribeOn(Schedulers.io()) // 指定 subscribe() 发生在 IO 线程
+    .observeOn(AndroidSchedulers.mainThread()) // 指定 Subscriber 的回调发生在主线程
+    .subscribe(new Action1<Integer>() {
+        @Override
+        public void call(Integer number) {
+            Log.d(tag, "number:" + number);
+        }
+    });
+```
+
+上面这段代码中，由于 subscribeOn(Schedulers.io()) 的指定，被创建的事件的内容 1、2、3、4 将会在 IO 线程发出；
+而由于 observeOn(AndroidScheculers.mainThread()) 的指定，因此 subscriber 数字的打印将发生在主线程 。
+事实上，这种在 subscribe() 之前写上两句subscribeOn(Scheduler.io()) 和 observeOn(AndroidSchedulers.mainThread()) 的使用方式非常常见，它适用于多数的 『后台线程取数据，主线程显示』的程序策略。
+
+下面的实例，在Observable.OnSubscribe的call()中模拟了长时间获取数据过程，在Subscriber的noNext()中显示数据到UI。
+
+```java
+Observable.create(new Observable.OnSubscribe<String>() {
+    @Override
+    public void call(Subscriber<? super String> subscriber) {
+
+        Log.d("test13_scheduler02", "被观察者所在的前线程名称：:" + Thread.currentThread().getName());
+
+        subscriber.onNext("info1");
+
+        SystemClock.sleep(2000);
+        subscriber.onNext("info2-sleep 2s");
+
+        SystemClock.sleep(3000);
+        subscriber.onNext("info2-sleep 3s");
+
+        SystemClock.sleep(5000);
+        subscriber.onCompleted();
+    }
+})
+        .subscribeOn(Schedulers.io()) //指定 subscribe() 发生在 IO 线程
+        .observeOn(AndroidSchedulers.mainThread()) //指定 Subscriber 的回调发生在主线程
+        .subscribe(new Subscriber<String>() {
+            @Override
+            public void onCompleted() {
+                Log.d("test13_scheduler02", "onCompleted()+当前线程名称：" + Thread.currentThread().getName());
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.v("test13_scheduler02", "onError() e=" + e);
+            }
+
+            @Override
+            public void onNext(String s) {
+                Log.d("test13_scheduler02", "onNext()+当前线程名称：:" + Thread.currentThread().getName());
+                mainView.showMsg(s);
+            }
+        });
+```
+
+至此，我们可以看到call()将会发生在 IO 线程，而showInfo(s)则被设定在了主线程。这就意味着，即使加载call()耗费了几十甚至几百毫秒的时间，也不会造成丝毫界面的卡顿。
+
+#### 值得注意：subscribeOn () 与 observeOn()都会返回了一个新的Observable，因此若不是采用上面这种直接流方式，而是分步调用方式，需要将新返回的Observable赋给原来的Observable，否则线程调度将不会起作用。
+
+![](picture/lizi.jpeg)
+
+使用下面方式，最后发现“OnSubscribe”还是在默认线程中运行；原因是subscribeOn这类操作后，返回的是一个新的Observable。
+
+```java
+observable.subscribeOn(Schedulers.io());
+observable.observeOn(AndroidSchedulers.mainThread());
+observable .subscribe(subscribe);
+```
+
+可以修改为下面两种方式：
+
+```java
+observable = observable.subscribeOn(Schedulers.io());
+observable = observable.observeOn(AndroidSchedulers.mainThread());
+observable .subscribe(subscribe);
+//OR
+observable.subscribeOn(Schedulers.io())
+.observeOn(AndroidSchedulers.mainThread())
+.subscribe(subscribe);
+```
+
+前面讲到了，可以利用 subscribeOn() 结合 observeOn() 来实现线程控制，让事件的产生和消费发生在不同的线程。可是在了解了 map() flatMap() 等变换方法后，有些好事的（其实就是当初刚接触 RxJava 时的我）就问了：能不能多切换几次线程？
+
+答案是：能。
+因为 observeOn() 指定的是 Subscriber 的线程，而这个 Subscriber 并不是（严格说应该为『不一定是』，但这里不妨理解为『不是』）subscribe() 参数中的 Subscriber ，而是 observeOn() 执行时的当前 Observable 所对应的 Subscriber ，即它的直接下级 Subscriber 。换句话说，observeOn() 指定的是它之后的操作所在的线程。因此如果有多次切换线程的需求，只要在每个想要切换线程的位置调用一次 observeOn() 即可。上代码：
+
+```java
+Observable.just(1, 2, 3, 4) // IO 线程，由 subscribeOn() 指定
+    .subscribeOn(Schedulers.io())
+    .observeOn(Schedulers.newThread())
+    .map(mapOperator) // 新线程，由 observeOn() 指定
+    .observeOn(Schedulers.io())
+    .map(mapOperator2) // IO 线程，由 observeOn() 指定
+    .observeOn(AndroidSchedulers.mainThread)
+    .subscribe(subscriber);  // Android 主线程，由 observeOn() 指定
+
+```
+
+如上，通过 observeOn() 的多次调用，程序实现了线程的多次切换。
+
+不过，不同于 observeOn() ， subscribeOn() 的位置放在哪里都可以，但它是只能调用一次的。
+
+又有好事的（其实还是当初的我）问了：如果我非要调用多次 subscribeOn() 呢？会有什么效果？
+
+这个问题先放着，我们还是从 RxJava 线程控制的原理说起吧。
+
+#### Scheduler 的原理
+
+其实， subscribeOn() 和 observeOn() 的内部实现，也是用的 lift()。具体看图（不同颜色的箭头表示不同的线程）：
+
+subscribeOn()原理图：
+
+![](picture/yuanli01.jpg)
+
+observeOn() 原理图：
+
+![](picture/yuanli02.jpg)
+
+从图中可以看出，subscribeOn() 和 observeOn() 都做了线程切换的工作（图中的 “schedule…” 部位）。不同的是， subscribeOn() 的线程切换发生在 OnSubscribe 中，即在它通知上一级 OnSubscribe 时，这时事件还没有开始发送，因此 subscribeOn() 的线程控制可以从事件发出的开端就造成影响；而 observeOn() 的线程切换则发生在它内建的 Subscriber 中，即发生在它即将给下一级 Subscriber 发送事件时，因此 observeOn() 控制的是它后面的线程。
+
+最后，我用一张图来解释当多个 subscribeOn() 和 observeOn() 混合使用时，线程调度是怎么发生的（由于图中对象较多，相对于上面的图对结构做了一些简化调整）：
+
+![](picture/yuanli03.jpg)
+
+图中共有 5 处含有对事件的操作。由图中可以看出，①和②两处受第一个 subscribeOn() 影响，运行在红色线程；③和④处受第一个 observeOn() 的影响，运行在绿色线程；⑤处受第二个 onserveOn() 影响，运行在紫色线程；而第二个 subscribeOn() ，由于在通知过程中线程就被第一个 subscribeOn() 截断，因此对整个流程并没有任何影响。这里也就回答了前面的问题：当使用了多个 subscribeOn() 的时候，只有第一个 subscribeOn() 起作用。
+
+#### 延伸：doOnSubscribe()
+
+> doOnSubscribe()一般用于执行一些初始化操作.
+
+然而，虽然超过一个的 subscribeOn() 对事件处理的流程没有影响，但在流程之前却是可以利用的。
+
+在前面讲 Subscriber 的时候，提到过 Subscriber 的 onStart() 可以用作流程开始前的初始化。然而 onStart() 由于在 subscribe() 发生时就被调用了，因此不能指定线程，而是只能执行在 subscribe() 被调用时的线程。这就导致如果 onStart() 中含有对线程有要求的代码（例如在界面上显示一个 ProgressBar，这必须在主线程执行），将会有线程非法的风险，因为有时你无法预测 subscribe() 将会在什么线程执行。
+
+而与 Subscriber.onStart() 相对应的，有一个方法 Observable.doOnSubscribe() 。它和 Subscriber.onStart() 同样是在 subscribe() 调用后而且在事件发送前执行，但区别在于它可以指定线程。默认情况下， doOnSubscribe() 执行在 subscribe() 发生的线程；而如果在 doOnSubscribe() 之后有 subscribeOn() 的话，它将执行在离它最近的 subscribeOn() 所指定的线程。
+
+示例：
+
+```java
+Observable.create(onSubscribe)
+    .subscribeOn(Schedulers.io())
+    .doOnSubscribe(new Action0() {
+        @Override
+        public void call() {
+            progressBar.setVisibility(View.VISIBLE); // 需要在主线程执行
+        }
+    })
+    .subscribeOn(AndroidSchedulers.mainThread()) // 指定主线程
+    .observeOn(AndroidSchedulers.mainThread())
+    .subscribe(subscriber);
+```
+
+如上，在 doOnSubscribe() 的后面跟一个 subscribeOn() ，就能指定准备工作的线程了。
+
+### RxJava 的适用场景和使用方式
+
+#### RxJava + Retrofit
+
+>Retrofit 是 Square 的一个著名的网络请求库。对于Retrofit不了解的同学
+ 可以参考我之前写的文章：[全新的网络加载框架Retrofit2，上位的小三](https://www.daidingkang.cc/2016/06/17/Retrofit2-network-framework-parsing/)
+
+Retrofit 除了提供了传统的 Callback 形式的 API，还有 RxJava 版本的 Observable 形式 API。下面我用对比的方式来介绍 Retrofit 的 RxJava 版 API 和传统版本的区别。
+
+以获取一个 MovieEntity 对象的接口作为例子。使用Retrofit 的传统 API，你可以用这样的方式来定义请求：
+
+```java
+
+@GET("top250")
+Call<MovieEntity> getTopMovie(@Query("start") int start, @Query("count") int count);//正常返回Call对象
+
+```
+
+我们来写getMovie方法的代码:
+
+```java
+//进行网络请求
+private void getMovie(){
+    String baseUrl = "https://api.douban.com/v2/movie/";
+
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+
+    MovieService movieService = retrofit.create(MovieService.class);
+    Call<MovieEntity> call = movieService.getTopMovie(0, 10);
+    call.enqueue(new Callback<MovieEntity>() {
+        @Override
+        public void onResponse(Call<MovieEntity> call, Response<MovieEntity> response) {
+            resultTV.setText(response.body().toString());
+        }
+
+        @Override
+        public void onFailure(Call<MovieEntity> call, Throwable t) {
+            resultTV.setText(t.getMessage());
+        }
+    });
+}
+```
+
+以上为没有经过封装的、原生态的Retrofit写网络请求的代码。
+
+而使用 RxJava 形式的 API，定义同样的请求是这样的：
+
+```java
+@GET("top250")
+  Observable<MovieEntity> getTopMovie(@Query("start") int start, @Query("count") int count);//RxJava返回Observable对象
+```
+
+Retrofit本身对Rxjava提供了支持，getMovie方法改为：
+
+```java
+//进行网络请求
+private void getMovie(){
+    String baseUrl = "https://api.douban.com/v2/movie/";
+
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJavaCallAdapterFactory.create())//提供RXjava支持
+            .build();
+
+    MovieService movieService = retrofit.create(MovieService.class);
+
+    movieService.getTopMovie(0, 10)//返回Observable对象
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(new Subscriber<MovieEntity>() {
+                @Override
+                public void onCompleted() {
+                    Toast.makeText(MainActivity.this, "Get Top Movie Completed", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    resultTV.setText(e.getMessage());
+                }
+
+                @Override
+                public void onNext(MovieEntity movieEntity) {
+                    resultTV.setText(movieEntity.toString());
+                }
+            });
+}
+```
+
+这样基本上就完成了Retrofit和Rxjava的结合，大家可以自己进行封装；那么用上了RxJava,我们就可以用它强大的操作符来对数据进行处理和操作，各位看官可以具体去实现，我在这里不做多做赘述。
+
+参考文章：[RxJava 与 Retrofit 结合的最佳实践](http://gank.io/post/56e80c2c677659311bed9841)
+
+#### RxBinding
+
+RxBinding 是 Jake Wharton 的一个开源库，它提供了一套在 Android 平台上的基于 RxJava 的 Binding API。所谓 Binding，就是类似设置 OnClickListener 、设置 TextWatcher 这样的注册绑定对象的 API。
+
+举个设置点击监听的例子。使用 RxBinding ，可以把事件监听用这样的方法来设置：
+
+```java
+Button button = ...;
+RxView.clickEvents(button) // 以 Observable 形式来反馈点击事件
+    .subscribe(new Action1<ViewClickEvent>() {
+        @Override
+        public void call(ViewClickEvent event) {
+            // Click handling
+        }
+    });
+```
+
+看起来除了形式变了没什么区别，实质上也是这样。甚至如果你看一下它的源码，你会发现它连实现都没什么惊喜：它的内部是直接用一个包裹着的 setOnClickListener() 来实现的。然而，仅仅这一个形式的改变，却恰好就是 RxBinding 的目的：扩展性。通过 RxBinding 把点击监听转换成 Observable 之后，就有了对它进行扩展的可能。扩展的方式有很多，根据需求而定。一个例子是前面提到过的 throttleFirst() 操作符，用于去抖动，也就是消除手抖导致的快速连环点击：
+
+```java
+RxView.clickEvents(button)
+    .throttleFirst(500, TimeUnit.MILLISECONDS)
+    .subscribe(clickAction);
+```
+
+如果想对 RxBinding 有更多了解，可以去它的 [GitHub 项目](https://github.com/JakeWharton/RxBinding) 下面看看。
+
+#### RxLifecyle
+
+RxLifecycle 配合 Activity/Fragment 生命周期来管理订阅的。 由于 RxJava Observable 订阅后（调用 subscribe 函数），一般会在后台线程执行一些操作（比如访问网络请求数据），当后台操作返回后，调用 Observer 的 onNext 等函数，然后在 更新 UI 状态。 但是后台线程请求是需要时间的，如果用户点击刷新按钮请求新的微博信息，在刷新还没有完成的时候，用户退出了当前界面返回前面的界面，这个时候刷新的 Observable 如果不取消订阅，则会导致之前的 Activity 无法被 JVM 回收导致内存泄露。 这就是 Android 里面的生命周期管理需要注意的地方，RxLifecycle 就是用来干这事的。比如下面的示例：
+
+```java
+myObservable
+    .compose(RxLifecycle.bindUntilEvent(lifecycle, ActivityEvent.DESTROY))
+    .subscribe();
+```
+
+这样Activity在destroy的时候就会自动取消这个observer
+
+#### RxBus
+
+RxBus并不是一个库，而是一种模式。相信大多数开发者都使用过EventBus或者Otto，作为事件总线通信库，如果你的项目已经加入RxJava和EventBus，不妨用RxBus代替EventBus，以减少库的依赖。RxJava也可以轻松实现事件总线，因为它们都依据于观察者模式。
+
+拓展链接：
+[用RxJava实现事件总线(Event Bus)](http://www.jianshu.com/p/ca090f6e2fe2)
+[[深入RxBus]：支持Sticky事件](http://www.jianshu.com/p/71ab00a2677b)
+
+#### RxPermission
+
+RxPermission是基于RxJava开发的用于帮助在Android 6.0中处理运行时权限检测的框架。在Android 6.0中，系统新增了部分权限的运行时动态获取。而不再是在以前的版本中安装的时候授予权限。
+
+拓展链接：
+[使用RxPermission框架对android6.0权限进行检测](http://blog.csdn.net/hzl9966/article/details/52062658?foxhandler=RssReadRenderProcessHandler)
+
+总结
+简而言之Rxjava是一个很牛逼的库，如果你的项目中还没有使用RxJava的话，建议可以尝试去集成使用；对大多数人而已RxJava是一个比较难上手的库了，不亚于Dagger的上手难度；不过当你认识学习使用过了，你就会发现RxJava的魅力所在；如果看一遍没有看懂的童鞋，建议多看几次；动手写写代码，我想信本文可以给到你们一些帮助；你们真正的体会到什么是 从入门到放弃再到不离不弃 ；这就是RxJava的魅力所在。
+
+
+
+
