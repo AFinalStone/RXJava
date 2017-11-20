@@ -18,19 +18,15 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
     public void onClick(View view) {
 
         switch (view.getId()) {
-
             case R.id.btn_test01ObservableAndObserver:
                 mainModule.test01_ObservableAndObserver();
                 break;
-
             case R.id.btn_test02Disposable:
                 mainModule.test02_Disposable();
                 break;
-
             case R.id.btn_test03Consumer:
                 mainModule.test03_Consumer();
                 break;
-
             case R.id.btn_test04Scheduler:
                 mainModule.test04_Scheduler();
                 break;
@@ -42,6 +38,12 @@ public class MainActivity extends AppCompatActivity implements MainContract.Main
                 break;
             case R.id.btn_test07Completable:
                 mainModule.test07_Completable();
+                break;
+            case R.id.btn_test08_Subject:
+                mainModule.test08_Subject();
+                break;
+            case R.id.btn_test09_Processor:
+                mainModule.test09_Processor();
                 break;
             default:
         }

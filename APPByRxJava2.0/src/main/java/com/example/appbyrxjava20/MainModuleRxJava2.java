@@ -16,7 +16,10 @@ import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.processors.AsyncProcessor;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.AsyncSubject;
+import io.reactivex.subjects.Subject;
 
 /**
  * Created by Administrator on 2017/11/17.
@@ -163,7 +166,7 @@ public class MainModuleRxJava2 implements MainContract.MainModule {
             @Override
             public void subscribe(FlowableEmitter<Integer> e) throws Exception {
 
-                for(int i=0;i<10000;i++){
+                for(int i=0;i<10;i++){
                     e.onNext(i);
                 }
                 e.onComplete();
@@ -174,21 +177,26 @@ public class MainModuleRxJava2 implements MainContract.MainModule {
                 .subscribe(new Consumer<Integer>() {
                     @Override
                     public void accept(Integer integer) throws Exception {
-                        Log.d("Flowable", integer.toString());
+                        Log.d("Flowable", "当前Integer：" + integer.toString());
                         Thread.sleep(1000);
                     }
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Exception {
-                        Log.d("Flowable",throwable.toString());
+                        Log.d("Flowable", "发生错误：" + throwable.toString());
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        Log.d("Flowable", "Action被执行");
                     }
                 });
 
-        Flowable.range(1,10000)
+        Flowable.range(33,10)
                 .onBackpressureDrop()
                 .subscribe(integer -> Log.d("range",integer.toString()));
 
-        Flowable.range(1,10).subscribe(new Subscriber<Integer>() {
+        Flowable.range(100,10).subscribe(new Subscriber<Integer>() {
             @Override
             public void onSubscribe(Subscription s) {
                 s.request(Long.MAX_VALUE);//设置请求数
@@ -196,17 +204,17 @@ public class MainModuleRxJava2 implements MainContract.MainModule {
 
             @Override
             public void onNext(Integer integer) {
-
+                Log.d("Flowable", "Flowable.range(100,10)+onNext被执行+Integer:"+integer);
             }
 
             @Override
             public void onError(Throwable t) {
-
+                Log.d("Flowable", "Flowable.range(100,10)+onError被执行+Throwable:"+t);
             }
 
             @Override
             public void onComplete() {
-
+                Log.d("Flowable", "Flowable.range(100,10)+onComplete被执行");
             }
         });
     }
@@ -219,6 +227,29 @@ public class MainModuleRxJava2 implements MainContract.MainModule {
     @Override
     public void test07_Completable() {
 
+    }
+
+    @Override
+    public void test08_Subject() {
+        //Subject
+        AsyncSubject<String> subject = AsyncSubject.create();
+        subject.subscribe(o -> Log.d("AsyncSubject",o));//three
+        subject.onNext("one");
+        subject.onNext("two");
+        subject.onNext("three");
+        subject.onComplete();
+
+    }
+
+    @Override
+    public void test09_Processor() {
+        //Processor
+        AsyncProcessor<String> processor = AsyncProcessor.create();
+        processor.subscribe(o -> Log.d("AsyncProcessor",o)); //three
+        processor.onNext("one");
+        processor.onNext("two");
+        processor.onNext("three");
+        processor.onComplete();
     }
 
 

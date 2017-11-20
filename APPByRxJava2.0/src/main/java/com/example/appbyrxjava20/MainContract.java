@@ -10,7 +10,6 @@ import android.support.annotation.RawRes;
 public class MainContract {
 
     public interface MainModule {
-
         public void test01_ObservableAndObserver();
         public void test02_Disposable();
         public void test03_Consumer();
@@ -18,7 +17,8 @@ public class MainContract {
         public void test05_Flowable();
         public void test06_Single();
         public void test07_Completable();
-
+        public void test08_Subject();
+        public void test09_Processor();
     }
 
     public interface MainView {
