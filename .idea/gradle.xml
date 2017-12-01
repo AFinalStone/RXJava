@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/AppByRxJava1.0" />
             <option value="$PROJECT_DIR$/AppByRxJava2.0" />
+            <option value="$PROJECT_DIR$/AppRxBus" />
             <option value="$PROJECT_DIR$/AppRxlifecycle" />
           </set>
         </option>

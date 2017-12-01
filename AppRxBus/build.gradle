@@ -1,20 +1,18 @@
 apply plugin: 'com.android.application'
 
-
 android {
     compileSdkVersion 25
     buildToolsVersion "27.0.1"
 
     defaultConfig {
-        applicationId "com.example.appbyrxjava20"
-        minSdkVersion 19
+        applicationId "com.example.apprxbus"
+        minSdkVersion 15
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        jackOptions {
-            enabled true
-        }
+
     }
     buildTypes {
         release {
@@ -22,22 +20,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    compileOptions {
-        targetCompatibility JavaVersion.VERSION_1_8
-        sourceCompatibility JavaVersion.VERSION_1_8
-    }
-//    lintOptions {
-//        abortOnError false
-//    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
 
+    //    compile 'io.reactivex:rxjava:1.0.14'
+//    compile 'io.reactivex:rxandroid:1.0.1'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'io.reactivex.rxjava2:rxjava:2.0.1'
     compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
-
-    compile 'com.jakewharton:butterknife:8.8.1'
-    annotationProcessor   'com.jakewharton:butterknife-compiler:8.8.1'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
 }

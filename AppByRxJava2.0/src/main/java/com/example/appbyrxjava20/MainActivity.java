@@ -1,18 +1,27 @@
 package com.example.appbyrxjava20;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Button;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements MainContract.MainView {
 
     public MainContract.MainModule mainModule;
 
+    @BindView(R.id.btn_test01ObservableAndObserver)
+    Button btnTest01ObservableAndObserver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
         mainModule = new MainModuleRxJava2(this);
+        btnTest01ObservableAndObserver.setText("測試1");
     }
 
     public void onClick(View view) {

@@ -1,1 +1,1 @@
-include ':AppByRxJava1.0', ':AppByRxJava2.0', ':AppRxlifecycle'
+include ':AppByRxJava1.0', ':AppByRxJava2.0', ':AppRxlifecycle', ':AppRxBus'
