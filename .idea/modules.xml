@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/AppByRxJava2.0/AppByRxJava2.0.iml" filepath="$PROJECT_DIR$/AppByRxJava2.0/AppByRxJava2.0.iml" />
       <module fileurl="file://$PROJECT_DIR$/AppRxBus/AppRxBus.iml" filepath="$PROJECT_DIR$/AppRxBus/AppRxBus.iml" />
       <module fileurl="file://$PROJECT_DIR$/AppRxlifecycle/AppRxlifecycle.iml" filepath="$PROJECT_DIR$/AppRxlifecycle/AppRxlifecycle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/RXJava.iml" filepath="$PROJECT_DIR$/.idea/RXJava.iml" />
       <module fileurl="file://$PROJECT_DIR$/RXJava.iml" filepath="$PROJECT_DIR$/RXJava.iml" />
     </modules>
   </component>
